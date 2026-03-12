@@ -1,35 +1,47 @@
-import { pipeline } from "@huggingface/transformers";
+import mineflayer from "mineflayer"
+import { mineflayer as mineflayerViewer } from "prismarine-viewer"
+import vec3 from 'vec3'
 
-// Create a text generation pipeline
-let smarts = 2;
-let modals = ["onnx-community/LFM2-350M-ONNX", "onnx-community/LFM2-700M-ONNX", "onnx-community/LFM2-1.2B-ONNX"];
+const bot = mineflayer.createBot({
+  host: 'javabottest.aternos.me', // minecraft server ip
+  username: 'Herobrine3', // username to join as if auth is `offline`, else a unique identifier for this account. Switch if you want to change accounts
+  auth: 'offline', // for offline mode servers, you can set this to 'offline'
+  // port: 25565,              // set if you need a port that isn't 25565
+  version: "1.21.11",
+  // password: '12345678'      // set if you want to use password-based auth (may be unreliable). If specified, the `username` must be an email
+})
 
-const generator = await pipeline(
-  "text-generation",
-  modals[smarts-1],
-  { dtype: "q4" },
-);
+bot.on('chat', (username, message) => {
+  if (username === bot.username) return
+  bot.chat(message)
+})
 
-let roles = [
-  "Your job is to ask thought provoking questions, with the goal of developing a plan for taking over the world.",
-  "You must come up with brillient answers to the given questions."
-];
+// Log errors and kick reasons:
+bot.on('kicked', console.log)
+bot.on('error', console.log)
 
-// Define the list of messages
-let messages = [
-  { role: "system", content: "" },
-];
+bot.on('death', () => bot.respawn())
 
-// Generate a response
-for (let i = 1; i <= 5; i++) {
-    messages[0].content = roles[(i - 1) % roles.length];
-    
-    const output = await generator(messages, { max_new_tokens: 256 });
+bot.on('login', () => {
+  console.log('Bot logged in successfully')
+})
 
-    messages.push({ role: 'assistant', content: output[0].generated_text.at(-1).content });
-    for (const message of messages) {
-      message.role = (message.role === 'user' ? 'assistant' : message.role === 'assistant' ? 'user' : message.role);
+async function digDown() {
+    const mine = bot.blockAt(vec3(Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y) - 1, Math.floor(bot.entity.position.z)));
+    if (!mine) {
+        setTimeout(digDown, 1000);
+        return;
     }
-
-    console.log(messages[messages.length - 1].content+'\n\n\n');
+    await bot.dig(mine, true);
+    setTimeout(digDown, 1000);
 }
+
+let done = false;
+bot.on('spawn', () => {
+  if (done) return;
+  done = true;
+
+  console.log('Bot spawned in the world')
+  mineflayerViewer(bot, { port: 3000 }) // Start the viewing server on port 3000
+  digDown();
+})
