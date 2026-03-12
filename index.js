@@ -4,7 +4,7 @@ import vec3 from 'vec3'
 
 const bot = mineflayer.createBot({
   host: 'javabottest.aternos.me', // minecraft server ip
-  username: 'Herobrine3', // username to join as if auth is `offline`, else a unique identifier for this account. Switch if you want to change accounts
+  username: 'Herobrine', // username to join as if auth is `offline`, else a unique identifier for this account. Switch if you want to change accounts
   auth: 'offline', // for offline mode servers, you can set this to 'offline'
   // port: 25565,              // set if you need a port that isn't 25565
   version: "1.21.11",
@@ -27,13 +27,16 @@ bot.on('login', () => {
 })
 
 async function digDown() {
+  try {
     const mine = bot.blockAt(vec3(Math.floor(bot.entity.position.x), Math.floor(bot.entity.position.y) - 1, Math.floor(bot.entity.position.z)));
     if (!mine) {
         setTimeout(digDown, 1000);
         return;
     }
     await bot.dig(mine, true);
-    setTimeout(digDown, 1000);
+  } catch(e) {console.log(e)}
+  
+  setTimeout(digDown, 1000);
 }
 
 let done = false;
